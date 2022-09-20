@@ -1,0 +1,1 @@
+from gym_coup.envs.coup_env import CoupEnv
