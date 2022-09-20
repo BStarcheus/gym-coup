@@ -2,6 +2,12 @@
 
 gym-coup contains the Coup game logic and the [OpenAI Gym](https://gym.openai.com/) environment to simulate a complete 2-player game.
 
+## Installation
+```bash
+$ pip install -r requirements.txt
+$ pip install -e .
+```
+
 ## Usage
 In a python file:
 ```python
