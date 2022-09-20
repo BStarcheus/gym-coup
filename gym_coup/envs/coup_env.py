@@ -740,13 +740,16 @@ class CoupEnv(gym.Env):
         31: 'exchange_return_34'  # return cards 3,4
     }
 
-    def __init__(self, num_human_players=0, p_first_turn=0):
+    def __init__(self, num_human_players=0, p_first_turn=0, is_partial_obs=True):
         '''
         num_human_players: Number of human players in the 2-player game
         p_first_turn:      Which player goes first, 0-indexed
+        is_partial_obs:    Whether the game is partially observable
+                           (true in real life where cards are hidden from opponent)
         '''
         self.num_human_players = num_human_players
         self.p_first_turn = p_first_turn
+        self.is_partial_obs = is_partial_obs
         self.game = None
 
         self.action_space = gym.spaces.Discrete(len(self.actions))
@@ -756,13 +759,13 @@ class CoupEnv(gym.Env):
         #     P1 card 2            (0 - 4)
         #     P1 card 3            (-1 - 4) # Can have 2 or 4 cards
         #     P1 card 4            (-1 - 4)
-        #     P2 card 1            (0 - 4)
-        #     P2 card 2            (0 - 4)
-        #     P2 card 3            (-1 - 4) # Can have 2 or 4 cards
+        #     P2 card 1            (-1 - 4) # -1 = Hidden from other player
+        #     P2 card 2            (-1 - 4)
+        #     P2 card 3            (-1 - 4)
         #     P2 card 4            (-1 - 4)
         #     P1 is card 1 face up (0 - 1)
         #     P1 is card 2 face up (0 - 1)
-        #     P1 is card 3 face up (-1 - 1)
+        #     P1 is card 3 face up (-1 - 1) # -1 = No card
         #     P1 is card 4 face up (-1 - 1)
         #     P2 is card 1 face up (0 - 1)
         #     P2 is card 2 face up (0 - 1)
@@ -770,12 +773,12 @@ class CoupEnv(gym.Env):
         #     P2 is card 4 face up (-1 - 1)
         #     P1 # coins           (0 - 12)
         #     P2 # coins           (0 - 12)
-        #     P1 last action       (-1 - 31)
+        #     P1 last action       (-1 - 31) # -1 = No prev action, start of game
         #     P2 last action       (-1 - 31)
         #     Whose next action    (0 - 1)
         # Note: many observations will never occur in game
         #       ex: All 4 cards are the same. Both players have all cards face up.
-        low  = np.array([0, 0, -1, -1, 0, 0, -1, -1, 0, 0, -1, -1, 0, 0, -1, -1, 0, 0, -1, -1, 0], dtype='int8')
+        low  = np.array([0, 0, -1, -1, -1, -1, -1, -1, 0, 0, -1, -1, 0, 0, -1, -1, 0, 0, -1, -1, 0], dtype='int8')
         high = np.array([4, 4, 4, 4, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 12, 12, 31, 31, 1], dtype='int8')
         self.observation_space = gym.spaces.Box(low, high, dtype='int8')
 
@@ -851,13 +854,13 @@ class CoupEnv(gym.Env):
             P1 card 2            (0 - 4)
             P1 card 3            (-1 - 4) # Can have 2 or 4 cards
             P1 card 4            (-1 - 4)
-            P2 card 1            (0 - 4)
-            P2 card 2            (0 - 4)
-            P2 card 3            (-1 - 4) # Can have 2 or 4 cards
+            P2 card 1            (-1 - 4) # -1 = Hidden from other player
+            P2 card 2            (-1 - 4)
+            P2 card 3            (-1 - 4)
             P2 card 4            (-1 - 4)
             P1 is card 1 face up (0 - 1)
             P1 is card 2 face up (0 - 1)
-            P1 is card 3 face up (-1 - 1)
+            P1 is card 3 face up (-1 - 1) # -1 = No card
             P1 is card 4 face up (-1 - 1)
             P2 is card 1 face up (0 - 1)
             P2 is card 2 face up (0 - 1)
@@ -865,13 +868,21 @@ class CoupEnv(gym.Env):
             P2 is card 4 face up (-1 - 1)
             P1 # coins           (0 - 12)
             P2 # coins           (0 - 12)
-            P1 last action       (-1 - 31)
+            P1 last action       (-1 - 31) # -1 = No prev action, start of game
             P2 last action       (-1 - 31)
             Whose next action    (0 - 1)
         Note: many observations will never occur in game
               ex: All 4 cards are the same. Both players have all cards face up.
         '''
         p1cards, p2cards, p1coins, p2coins, p1la, p2la, wa = self.game.get_obs(p2_view=p2_view, text=text)
+
+        # Partial Observability
+        # Hide value of P2 face down cards
+        if self.is_partial_obs:
+            if text:
+                p2cards = [(val, icfu) if icfu == 1 else (self.actions[NONE], icfu) for (val, icfu) in p2cards]
+            else:
+                p2cards = [(val, icfu) if icfu == 1 else (NONE, icfu) for (val, icfu) in p2cards]
 
         obs = []
 
