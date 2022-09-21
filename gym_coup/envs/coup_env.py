@@ -823,6 +823,7 @@ class CoupEnv(gym.Env):
 
     def reset(self):
         self.game = Game(self.num_human_players, self.p_first_turn)
+        return (self.get_obs(), dict())
 
     def render(self, mode='human'):
         if self.game is not None:
