@@ -97,15 +97,17 @@ class TestGeneralActions(TestCoupEnvBase):
         self.assertListEqual(self.env.get_valid_actions(), [LOSE_CARD_1, LOSE_CARD_2])
 
     def test_coup_lose_card(self):
-        for i in range(11):
+        for _ in range(11):
             self.env.step(INCOME)
         self.env.step(COUP)
         self.env.step(LOSE_CARD_1)
         obs, r, term, _ = self.env.last()
         self.assertEqual(obs[-1], 0) # It's P1's action
-        self.assertEqual(obs[8], 1) # face up
+        self.assertIn(1, obs[8:10]) # 1 face up card
+        self.assertIn(0, obs[8:10]) # 1 face down card
         self.assertEqual(obs[17], 0) # P2 coins
         self.assertEqual(r, -1)
+        self.assertEqual(term, False)
 
         self.env.step(INCOME) # Go back to P2 turn
         _, r, _, _ = self.env.last()
@@ -131,9 +133,11 @@ class TestAssassin(TestCoupEnvBase):
         self.env.step(LOSE_CARD_1)
         obs, r, term, _ = self.env.last()
         self.assertEqual(obs[-1], 1) # It's P2's action
-        self.assertEqual(obs[8], 1) # face up
+        self.assertIn(1, obs[8:10]) # 1 face up card
+        self.assertIn(0, obs[8:10]) # 1 face down card
         self.assertEqual(obs[17], 0) # P1 coins
         self.assertEqual(r, -1)
+        self.assertEqual(term, False)
 
         self.env.step(INCOME) # Go back to P1 turn
         _, r, _, _ = self.env.last()
@@ -145,7 +149,8 @@ class TestAssassin(TestCoupEnvBase):
         self.env.step(INCOME) # Go back to P1 turn
         self.env.step(ASSASSINATE)
         self.env.step(CHALLENGE_ASSASSINATE)
-        _, r, term, _ = self.env.last()
+        obs, r, term, _ = self.env.last()
+        self.assertListEqual(list(obs[8:10]), [1, 1])
         self.assertEqual(r, -2)
         self.assertEqual(term, True)
 
@@ -156,14 +161,23 @@ class TestAmbassador(TestCoupEnvBase):
         deal_card(self.env, AMBASSADOR)
 
     def test_exchange(self):
+        obs, _, _, _ = self.env.last()
+        for i in [2, 3, 10, 11]:
+            self.assertEqual(-1, obs[i]) # Player only has 2 cards in hand
+
         self.env.step(EXCHANGE)
         self.assertListEqual(self.env.get_valid_actions(), [PASS_EXCHANGE, CHALLENGE_EXCHANGE])
         self.env.step(PASS_EXCHANGE)
+        obs, _, _, _ = self.env.last()
+        self.assertNotIn(-1, obs[0:4]) # Player has 4 cards in hand
+        self.assertNotIn(-1, obs[8:12])
         self.assertListEqual(self.env.get_valid_actions(), [EXCHANGE_RETURN_34, EXCHANGE_RETURN_13,
                                                             EXCHANGE_RETURN_14, EXCHANGE_RETURN_23,
                                                             EXCHANGE_RETURN_24, EXCHANGE_RETURN_12])
         self.env.step(EXCHANGE_RETURN_12)
-        _, r, term, _ = self.env.last()
+        obs, r, term, _ = self.env.last()
+        for i in [2, 3, 10, 11]:
+            self.assertEqual(-1, obs[i]) # Player only has 2 cards in hand
         self.assertEqual(r, 0)
         self.assertEqual(term, False)
 
