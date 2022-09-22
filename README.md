@@ -1,6 +1,8 @@
 # Coup RL Gym Environment
 
-gym-coup contains the Coup game logic and the [OpenAI Gym](https://gym.openai.com/) environment to simulate a complete 2-player game.
+gym-coup is a Gym environment for a 2-player version of the deception-based board game Coup.
+
+The env mostly follows the [OpenAI Gym](https://github.com/openai/gym) API spec, but also takes inspiration from [PettingZoo](https://github.com/Farama-Foundation/PettingZoo) to support multiple agents.
 
 ## Installation
 ```bash
@@ -17,7 +19,7 @@ env = gym.make('coup-v0')
 env.reset()
 ```
 Then you can take `.step()`'s with each player's actions in the game.
-Actions are [defined here](https://github.com/BStarcheus/coup-rl/blob/main/gym-coup/gym_coup/envs/coup_env.py#L18).
+Actions are [defined here](https://github.com/BStarcheus/gym-coup/blob/main/gym_coup/envs/coup_env.py#L18).
 Make sure that on any turn, you are only taking valid actions. Check with `.get_valid_actions()`.
 
 To see how the game progresses set the log level and call `.render()`:
