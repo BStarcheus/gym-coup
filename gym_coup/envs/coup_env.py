@@ -751,6 +751,7 @@ class CoupEnv(gym.Env):
         self.p_first_turn = p_first_turn
         self.is_partial_obs = is_partial_obs
         self.game = None
+        self.cumulative_rewards = None
 
         self.action_space = gym.spaces.Discrete(len(self.actions))
 
@@ -809,6 +810,7 @@ class CoupEnv(gym.Env):
         if 2 in num_cards_2 and not self.game.game_over:
             raise RuntimeError('Game over was not set when it should be')
 
+        self.cumulative_rewards[whose_a] = 0
         reward = 0
         # Get number of cards lost this action by each player
         dif_curr = num_cards_2[whose_a] - num_cards_1[whose_a]
@@ -817,13 +819,24 @@ class CoupEnv(gym.Env):
         reward += -1 * dif_curr
         # +1 if your opp loses a card
         reward += 1 * dif_opp
+
+        self.cumulative_rewards[whose_a] += reward
+        self.cumulative_rewards[1-whose_a] -= reward
+
         logger.debug(f'Reward: {reward}')
 
         return (obs, reward, self.game.game_over, dict())
 
     def reset(self):
         self.game = Game(self.num_human_players, self.p_first_turn)
-        return (self.get_obs(), dict())
+        self.cumulative_rewards = [0, 0]
+
+    def last(self):
+        p = self.game.whose_action
+        return (self.get_obs(p2_view=p),
+                self.cumulative_rewards[p],
+                self.game.game_over,
+                dict())
 
     def render(self, mode='human'):
         if self.game is not None:
