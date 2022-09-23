@@ -1,0 +1,1 @@
+from gym_coup.utils.encode_obs import encode_obs
